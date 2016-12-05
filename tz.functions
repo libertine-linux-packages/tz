@@ -1,0 +1,85 @@
+# This file is part of libertine linux's package tz. It is subject to the license terms in the COPYRIGHT file found in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux-packages/tz/master/COPYRIGHT. No part of libertine linux's package tz, including this file, may be copied, modified, propagated, or distributed except according to the terms contained in the COPYRIGHT file.
+# Copyright © 2016 The developers of libertine linux's package tz. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux-packages/tz/master/COPYRIGHT.
+
+
+variant=upstream
+
+depends busybox
+
+depends build_gnumake
+build_needs make
+
+depends build_ccache
+build_needs ccache
+
+depends build_musl_cross_make_build
+build_needs "$libertine_build"-cc "$libertine_build"-ar
+
+depends build_musl_cross_make_host
+build_needs "$libertine_host"-cc "$libertine_host"-ar "$libertine_host"-strip
+
+depends build_busybox
+build_needs chmod grep awk sh mkdir touch install diff
+
+build_needs mkdir mv rm cp sed ln
+libertine_compile_tz()
+{
+	if core_variable_isUnset libertine_tz_timezone; then
+		libertine_tz_timezone='UTC'
+	fi
+	if core_variable_isUnset libertine_tz_installAll; then
+		libertine_tz_installAll='false'
+	fi
+	
+	local sourceFolderPath="$(libertine_public_sourcePath)"
+	
+	
+	mkdir -m 0755 -p "$(libertine_public_outputHostSysrootPath)"/usr/bin
+	
+	pushd "$sourceFolderPath"
+		libertine_public_makeSerial DESTDIR="$(libertine_public_outputHostSysrootPath)" \
+			LOCALTIME="$libertine_tz_timezone" KSHELL="$(libertine_public_PATH)"/sh REDO=posix_only TOPDIR='' ETCDIR='/etc' BINDIR=/usr/bin MANDIR=/usr/man LIBDIR=/usr/lib \
+			cc="ccache $libertine_build-cc -pipe -O0 -g0" \
+			AR=$libertine_build-ar \
+			install
+	
+		# tzselect is in the wrong place!
+		mv "$(libertine_public_outputHostSysrootPath)"/etc/tzselect "$(libertine_public_outputHostSysrootPath)"/usr/bin
+		
+		libertine_public_makeSerial clean
+	popd
+	
+	if [ ! -s "$(libertine_public_outputHostSysrootPath)"/etc/zoneinfo/"$libertine_tz_timezone" ]; then
+		core_exitError $core_commandLine_exitCode_CONFIG "No such configured timezone '$libertine_tz_timezone'"
+	fi
+	
+	# These binary files have been created for the build architecture, NOT the target architecture; rebuild for target architecture
+	# We do not do this initially as the zic binary is used as part of install... yet another package that doesn't understand cross compilation
+	local buildArchitectureBinaryUnwanted
+	for buildArchitectureBinaryUnwanted in zdump zic
+	do
+		rm -rf "$(libertine_public_outputHostSysrootPath)"/etc/"$buildArchitectureBinaryUnwanted"
+		pushd "$sourceFolderPath"
+			libertine_public_makeSerial DESTDIR="$(libertine_public_outputHostSysrootPath)" \
+				LOCALTIME="$libertine_tz_timezone" KSHELL=/bin/sh REDO=posix_only TOPDIR='' ETCDIR='/etc' BINDIR=/usr/bin MANDIR=/usr/man LIBDIR=/usr/lib \
+				cc="ccache $libertine_host-cc" \
+				AR=$libertine_host-ar \
+				CFLAGS='-DHAVE_GETTEXT=1 -DTM_GMTOFF=tm_gmtoff -DTM_ZONE=tm_zone -DTHREAD_SAFE=1 -pthread $(libertine_public_hostCCompilerFlags)' \
+				"$buildArchitectureBinaryUnwanted"
+			"$libertine_host"-strip "$buildArchitectureBinaryUnwanted"
+		popd
+		
+		cp "$sourceFolderPath"/"$buildArchitectureBinaryUnwanted" "$(libertine_public_outputHostSysrootPath)"/usr/bin
+	done
+	
+	local outputSysrootFolderPath="$(libertine_public_outputInitramfsPath)"
+	libertine_public_copy_filesystem "$(libertine_public_packagePath)"/filesystem/ "$outputSysrootFolderPath"/
+	if $libertine_tz_installAll; then
+		libertine_public_copy "$(libertine_public_outputHostSysrootPath)"/etc/zoneinfo/. "$outputSysrootFolderPath"/etc/zoneinfo/
+	else
+		cp "$(libertine_public_outputHostSysrootPath)"/etc/zoneinfo/"$libertine_tz_timezone" "$outputSysrootFolderPath"/etc/zoneinfo/"$libertine_tz_timezone"
+	fi
+	
+	sed -i -e 's/@TZ@/'"$libertine_tz_timezone"'/g' "$outputSysrootFolderPath"/etc/timezone
+	ln -s zoneinfo/"$libertine_tz_timezone" "$outputSysrootFolderPath"/etc/localtime
+}
