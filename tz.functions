@@ -38,7 +38,7 @@ libertine_compile_tz()
 	
 	pushd "$sourceFolderPath"
 		libertine_public_makeSerial DESTDIR="$(libertine_public_outputHostSysrootPath)" \
-			LOCALTIME="$libertine_tz_timezone" KSHELL="$(libertine_public_PATH)"/sh REDO=posix_only TOPDIR='' ETCDIR='/etc' BINDIR=/usr/bin MANDIR=/usr/man LIBDIR=/usr/lib \
+			LOCALTIME="$libertine_tz_timezone" KSHELL="$(libertine_public_buildNeedsPath)"/sh REDO=posix_only TOPDIR='' ETCDIR='/etc' BINDIR=/usr/bin MANDIR=/usr/man LIBDIR=/usr/lib \
 			cc="ccache $libertine_build-cc -pipe -O0 -g0" \
 			AR=$libertine_build-ar \
 			install
