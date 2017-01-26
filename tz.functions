@@ -18,6 +18,9 @@ build_needs "$libertine_build"-cc "$libertine_build"-ar
 depends build_musl_cross_make_host
 build_needs "$libertine_host"-cc "$libertine_host"-ar "$libertine_host"-strip
 
+depends build_paxctl
+build_needs paxctl
+
 depends build_busybox
 build_needs chmod grep awk sh mkdir touch install diff
 
