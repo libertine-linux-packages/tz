@@ -66,7 +66,7 @@ libertine_compile_tz()
 				AR=$libertine_host-ar \
 				CFLAGS='-DHAVE_GETTEXT=1 -DTM_GMTOFF=tm_gmtoff -DTM_ZONE=tm_zone -DTHREAD_SAFE=1 -pthread $(libertine_public_hostCCompilerFlags)' \
 				"$buildArchitectureBinaryUnwanted"
-			"$libertine_host"-strip "$buildArchitectureBinaryUnwanted"
+			libertine_public_stripAndSecureBinary "$buildArchitectureBinaryUnwanted"
 		popd
 		
 		cp "$sourceFolderPath"/"$buildArchitectureBinaryUnwanted" "$(libertine_public_outputHostSysrootPath)"/usr/bin
