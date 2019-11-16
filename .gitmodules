@@ -2,4 +2,3 @@
 	path = upstream
 	url = https://github.com/libertine-linux-clones/tz.git
 	branch = master
-	libertine-linux-upstream = https://github.com/eggert/tz.git
