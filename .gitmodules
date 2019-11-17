@@ -2,3 +2,7 @@
 	path = upstream
 	url = https://github.com/libertine-linux-clones/tz.git
 	branch = master
+	update = checkout
+	ignore = none
+	fetchRecurseSubmodules = true
+	shallow = true
